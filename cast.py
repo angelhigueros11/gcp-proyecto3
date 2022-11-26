@@ -1,7 +1,7 @@
 
 import contextlib
 import itertools
-from math import atan2, cos, pi, sin
+from math import atan2, cos, pi, sin, degrees
 
 import pygame
 
@@ -55,7 +55,7 @@ class Raycaster(object):
         self.screen = screen
         _, _, self.width, self.height = screen.get_rect()
         self.blocksize = 50
-        self.map= []
+        self.map = []
         self.player = {
             "y": int(self.blocksize + self.blocksize / 2),
             "x": int(self.blocksize + self.blocksize / 2),
@@ -68,27 +68,25 @@ class Raycaster(object):
     def clearZ(self):
         self.zbuffer = [99999 for _ in range(int(self.width / 2))]
 
-
-    def point(self, x, y, c = WHITE):
+    def point(self, x, y, c=WHITE):
         self.screen.set_at((x, y), c)
 
     def block(self, x, y, wall):
         for i in range(x, x + self.blocksize):
             for j in range(y, y + self.blocksize):
-                tx = int(( i - x ) * 128 / self.blocksize)
-                ty = int(( j - y ) * 128 / self.blocksize)
+                tx = int((i - x) * 128 / self.blocksize)
+                ty = int((j - y) * 128 / self.blocksize)
                 c = wall.get_at((tx, ty))
                 self.point(i, j, c)
 
-
-    def load_map(self, filename):   
+    def load_map(self, filename):
         with open(filename) as f:
             for line in f:
                 self.map.append(list(line))
 
     def draw_stake(self, x, h, c, tx):
-        start_y = int(self.height / 2  - h / 2)
-        end_y = int(self.height / 2 + h / 2 )
+        start_y = int(self.height / 2 - h / 2)
+        end_y = int(self.height / 2 + h / 2)
         height = end_y - start_y
 
         for y in range(start_y, end_y):
@@ -103,11 +101,9 @@ class Raycaster(object):
                 i = int(x / self.blocksize)
                 j = int(y / self.blocksize)
 
-
-                if self.map[j][i] !=  ' ':
+                if self.map[j][i] != ' ':
                     self.block(x, y, walls[self.map[j][i]])
-            
-    
+
     def draw_player(self):
         self.point(self.player["x"], self.player["y"])
 
@@ -120,30 +116,28 @@ class Raycaster(object):
 
     def draw_sprite(self, sprite):
         sprite_a = atan2(
-                sprite["y"] - self.player["y"],
-                sprite["x"] - self.player["x"],
-            )
-
+            sprite["y"] - self.player["y"],
+            sprite["x"] - self.player["x"],
+        )
 
         d = (
-            (self.player["x"]- sprite["x"]) ** 2 +
-            (self.player["y"]- sprite["y"]) ** 2
-            ) ** 0.5
+            (self.player["x"] - sprite["x"]) ** 2 +
+            (self.player["y"] - sprite["y"]) ** 2
+        ) ** 0.5
 
         sprite_size = int((500 / d) * (500 / 10))
         sprite_x = int(
-            (self.width / 2) + #offser mapa (mostrarlo solo en la segunda mitad)
+            (self.width / 2) +  # offser mapa (mostrarlo solo en la segunda mitad)
             (sprite_a - self.player["a"]) *
-            (self.width / 2) / self.player["fov"] + 
-            sprite_size / 2 # Centrar sprite
+            (self.width / 2) / self.player["fov"] +
+            sprite_size / 2  # Centrar sprite
         )
         sprite_y = int(self.height / 2 - sprite_size / 2)
-
 
         for x, y in itertools.product(range(sprite_x, sprite_x + sprite_size), range(sprite_y, sprite_y + sprite_size)):
             tx = int((x - sprite_x) * 128 / sprite_size)
             ty = int((y - sprite_y) * 128 / sprite_size)
-            c= sprite["sprite"].get_at((tx, ty))
+            c = sprite["sprite"].get_at((tx, ty))
             with contextlib.suppress(Exception):
                 if c != TRANSPARENT and sprite_x > 500 and self.zbuffer[int(x - self.width / 2)] >= d:
                     self.point(x, y, c)
@@ -154,20 +148,19 @@ class Raycaster(object):
         ox = self.player["x"]
         oy = self.player["y"]
 
-
         while True:
             x = int(ox + d * cos(a))
-            y = int(oy + d * sin(a)) 
+            y = int(oy + d * sin(a))
 
             i = int(x / self.blocksize)
-            j = int(y / self.blocksize) 
+            j = int(y / self.blocksize)
 
             if self.map[j][i] != ' ':
                 hitx = x - i * self.blocksize
                 hity = y - j * self.blocksize
 
                 maxhit = hitx if 1 < hitx < self.blocksize - 1 else hity
-                tx = int( maxhit * 128 / self.blocksize)
+                tx = int(maxhit * 128 / self.blocksize)
                 return d, self.map[j][i], tx
 
             self.point(x, y)
@@ -180,23 +173,26 @@ class Raycaster(object):
         density = 100
         # Minimapa
         for i in range(density):
-            a = self.player["a"] - self.player["fov"] / 2 + self.player["fov"] * i / density
+            a = self.player["a"] - self.player["fov"] / \
+                2 + self.player["fov"] * i / density
             d, c, _ = self.cast_ray(a)
 
         for i in range(500):
             self.point(499, i)
             self.point(500, i)
             self.point(501, i)
-            
+
         # Draw in 3D
         for i in range(int(self.width / 2)):
             try:
 
-                a = self.player["a"] - self.player["fov"] / 2 + self.player["fov"] * i / (self.width / 2)
+                a = self.player["a"] - self.player["fov"] / \
+                    2 + self.player["fov"] * i / (self.width / 2)
                 d, c, tx = self.cast_ray(a)
                 x = int(self.width / 2 + i)
-                h = self.height / (d * cos(a - self.player["a"])) * self.height / 10
-            
+                h = self.height / \
+                    (d * cos(a - self.player["a"])) * self.height / 10
+
                 if self.zbuffer[i] >= d:
                     self.draw_stake(x, h, c, tx)
                     self.zbuffer[i] = d
@@ -210,7 +206,6 @@ class Raycaster(object):
                 elif self.move == "yd":
                     self.player["y"] -= 20
 
-    
         self.draw_enemies()
 
 
@@ -244,19 +239,20 @@ title_nivel3 = font_menu.render('Presione 3 para nivel avanzado', True, WHITE)
 nivel3Obj = title_nivel3.get_rect()
 nivel3Obj.center = (500, 350)
 
-
+correction_angle = 90
 running = True
 while running:
 
     while menu:
         for dec in range(0, 1000, 256):
-            screen.blit( walls["2"].convert(), (dec, 375))
+            screen.blit(walls["2"].convert(), (dec, 375))
 
         display_surface.blit(title, titleObj)
         display_surface.blit(subtitle, subtitleOBj)
         display_surface.blit(title_nivel1, nivel1Obj)
         display_surface.blit(title_nivel2, nivel2Obj)
         display_surface.blit(title_nivel3, nivel3Obj)
+
         pygame.display.flip()
 
         for event in pygame.event.get():
@@ -282,10 +278,10 @@ while running:
                     r.clearZ()
                     menu = False
 
-
     screen.fill(BLACK, (0, 0, r.width / 2, r.height))
     screen.fill(SKY, (r.width / 2, 0, r.width, r.height / 2))
-    screen.fill((90, 193, 103), (r.width / 2, r.height / 2, r.width, r.height / 2))
+    screen.fill((90, 193, 103), (r.width / 2,
+                r.height / 2, r.width, r.height / 2))
     r.clearZ()
     r.render()
     fps_text = pygame.font.Font('freesansbold.ttf', 15).render(
@@ -301,9 +297,21 @@ while running:
     pygame.display.flip()
 
     for event in pygame.event.get():
+        mouse_move = pygame.mouse.get_rel()[0]
+
+        if mouse_move > 0:
+            r.player["a"] += pi / 6
+
+        if mouse_move < 0:
+            r.player["a"] -= pi / 6
+
         if event.type == pygame.QUIT:
             running = False
+
         if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_DOWN:
+                r.move = "yd"
+                r.player["y"] += 20
 
             if event.key == pygame.K_ESCAPE:
                 running = False
@@ -325,7 +333,3 @@ while running:
             if event.key == pygame.K_UP:
                 r.move = "yu"
                 r.player["y"] -= 20
-
-            if event.key == pygame.K_DOWN:
-                r.move = "yd"
-                r.player["y"] += 20
