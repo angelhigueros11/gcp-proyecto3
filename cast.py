@@ -63,6 +63,7 @@ class Raycaster(object):
             "a": int(pi / 3)
         }
         self.move = ""
+        self.mapa = 1
         self.clearZ()
 
     def clearZ(self):
@@ -218,7 +219,7 @@ music = pygame.mixer.music.load('mario.mp3')
 pygame.mixer.music.play()
 
 menu = True
-display_surface = pygame.display.set_mode((1000, 500))
+menu_screen = pygame.display.set_mode((1000, 500))
 pygame.display.set_caption('Show text')
 font = pygame.font.Font('freesansbold.ttf', 40)
 font_menu = pygame.font.Font('freesansbold.ttf', 20)
@@ -239,97 +240,123 @@ title_nivel3 = font_menu.render('Presione 3 para nivel avanzado', True, WHITE)
 nivel3Obj = title_nivel3.get_rect()
 nivel3Obj.center = (500, 350)
 
+victoriaTitle = font.render('GANASTE!', True, SKY)
+victoriaTitleObj = victoriaTitle.get_rect()
+victoriaTitleObj.center = (10, 150)
+
 correction_angle = 90
 running = True
 while running:
+    try:
+        while menu:
+            for dec in range(0, 1000, 256):
+                screen.blit(walls["2"].convert(), (dec, 375))
 
-    while menu:
-        for dec in range(0, 1000, 256):
-            screen.blit(walls["2"].convert(), (dec, 375))
+            menu_screen.blit(title, titleObj)
+            menu_screen.blit(subtitle, subtitleOBj)
+            menu_screen.blit(title_nivel1, nivel1Obj)
+            menu_screen.blit(title_nivel2, nivel2Obj)
+            menu_screen.blit(title_nivel3, nivel3Obj)
 
-        display_surface.blit(title, titleObj)
-        display_surface.blit(subtitle, subtitleOBj)
-        display_surface.blit(title_nivel1, nivel1Obj)
-        display_surface.blit(title_nivel2, nivel2Obj)
-        display_surface.blit(title_nivel3, nivel3Obj)
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    menu = False
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_1:
+                        r.mapa = 1
+                        r = Raycaster(screen)
+                        r.load_map('./map.txt')
+                        r.clearZ()
+                        menu = False
+                    if event.key == pygame.K_2:
+                        r.mapa = 2
+                        r = Raycaster(screen)
+                        r.load_map('./map2.txt')
+                        r.clearZ()
+                        menu = False
+
+                    if event.key == pygame.K_3:
+                        r.mapa = 3
+                        r = Raycaster(screen)
+                        r.load_map('./map3.txt')
+                        r.clearZ()
+                        menu = False
+
+        screen.fill(BLACK, (0, 0, r.width / 2, r.height))
+        screen.fill(SKY, (r.width / 2, 0, r.width, r.height / 2))
+        screen.fill((90, 193, 103), (r.width / 2,
+                    r.height / 2, r.width, r.height / 2))
+        r.clearZ()
+        r.render()
+        fps_text = pygame.font.Font('freesansbold.ttf', 15).render(
+            f'{int(fps_counter.get_fps())} FPS',
+            True,
+            WHITE,
+            BLACK
+        )
+
+        screen.blit(fps_text, (950, 10))
+        fps_counter.tick(60)
 
         pygame.display.flip()
 
         for event in pygame.event.get():
+            mouse_move = pygame.mouse.get_rel()[0]
+
+            x = r.player["x"]
+            y = r.player["y"]
+
+            print(x, y)
+
+            if r.mapa == 1 and x > 375 and ( y < 440 and y > 410):
+                print("Victoria")
+                running = False
+                menu_screen.blit(victoriaTitle, victoriaTitleObj)
+
+            if r.mapa == 2 and ( y < 345 and y > 390) and ( y < 300 and y > 245):
+                print("Victoria")
+                running = False
+                menu_screen.blit(victoriaTitle, victoriaTitleObj)
+
+      
+            if mouse_move > 0:
+                r.player["a"] += pi / 6
+
+            if mouse_move < 0:
+                r.player["a"] -= pi / 6
+
             if event.type == pygame.QUIT:
                 running = False
-                menu = False
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
-                    r = Raycaster(screen)
-                    r.load_map('./map.txt')
-                    r.clearZ()
-                    menu = False
-                if event.key == pygame.K_2:
-                    r = Raycaster(screen)
-                    r.load_map('./map2.txt')
-                    r.clearZ()
-                    menu = False
+                if event.key == pygame.K_DOWN:
+                    r.move = "yd"
+                    r.player["y"] += 20
 
-                if event.key == pygame.K_3:
-                    r = Raycaster(screen)
-                    r.load_map('./map3.txt')
-                    r.clearZ()
-                    menu = False
+                if event.key == pygame.K_ESCAPE:
+                    running = False
 
-    screen.fill(BLACK, (0, 0, r.width / 2, r.height))
-    screen.fill(SKY, (r.width / 2, 0, r.width, r.height / 2))
-    screen.fill((90, 193, 103), (r.width / 2,
-                r.height / 2, r.width, r.height / 2))
-    r.clearZ()
-    r.render()
-    fps_text = pygame.font.Font('freesansbold.ttf', 15).render(
-        f'{int(fps_counter.get_fps())} FPS',
-        True,
-        WHITE,
-        BLACK
-    )
+                if event.key == pygame.K_a:
+                    r.player["a"] -= pi / 25
 
-    screen.blit(fps_text, (950, 10))
-    fps_counter.tick(60)
+                if event.key == pygame.K_d:
+                    r.player["a"] += pi / 25
 
-    pygame.display.flip()
+                if event.key == pygame.K_RIGHT:
+                    r.move = "xr"
+                    r.player["x"] += 20
 
-    for event in pygame.event.get():
-        mouse_move = pygame.mouse.get_rel()[0]
+                if event.key == pygame.K_LEFT:
+                    r.move = "xl"
+                    r.player["x"] -= 20
 
-        if mouse_move > 0:
-            r.player["a"] += pi / 6
-
-        if mouse_move < 0:
-            r.player["a"] -= pi / 6
-
-        if event.type == pygame.QUIT:
-            running = False
-
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_DOWN:
-                r.move = "yd"
-                r.player["y"] += 20
-
-            if event.key == pygame.K_ESCAPE:
-                running = False
-
-            if event.key == pygame.K_a:
-                r.player["a"] -= pi / 25
-
-            if event.key == pygame.K_d:
-                r.player["a"] += pi / 25
-
-            if event.key == pygame.K_RIGHT:
-                r.move = "xr"
-                r.player["x"] += 20
-
-            if event.key == pygame.K_LEFT:
-                r.move = "xl"
-                r.player["x"] -= 20
-
-            if event.key == pygame.K_UP:
-                r.move = "yu"
-                r.player["y"] -= 20
+                if event.key == pygame.K_UP:
+                    r.move = "yu"
+                    r.player["y"] -= 20
+    except:
+        running = False
+        print("Perdiste")
